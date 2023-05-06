@@ -9,22 +9,32 @@ from os.path import isfile, join
 import numpy as np
 
 # %%
-#soy_trade = pd.read_excel('data/soytrade.xlsx')
+soy_trade = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/soytrade.csv')
+country_size = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/countries_size.csv')
+ex_rate = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Exchange%20Rates.csv', skiprows=2)
+gdp_data = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Gross%20Domestic%20Product.csv',skiprows=2)
 
-soy_trade = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/soytrade.csv?token=GHSAT0AAAAAACAIZJ3JI6FZBAGVWOJC63GWZCWBUCA')
-country_size = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/countries_size.csv?token=GHSAT0AAAAAACAIZJ3J3FI7LT44R7AGRWGAZCWBV7Q')
+
+soy_trade.rename(columns={"1201 in 1000 USD ": "trade_value"}, inplace=True)
+soy_trade['ln_trade_value'] = soy_trade['trade_value'].apply(lambda x: np.log(x))
+
+
+country_size.drop([0,1,2], inplace=True)
+country_size.columns = country_size.iloc[0]
+country_size.drop([3], inplace=True)
+country_size.drop(columns=['Indicator Name','Indicator Code', 'Country Name', 1960.0], inplace=True)
+
+
+gdp_data.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
+
+ex_rate.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
+
 
 # %%
 soy_trade.head()
 
 # %%
 country_size.head()
-
-# %%
-country_size.drop([0,1,2], inplace=True)
-country_size.columns = country_size.iloc[0]
-country_size.drop([3], inplace=True)
-country_size.drop(columns=['Indicator Name','Indicator Code', 'Country Name', 1960.0], inplace=True)
 
 # %%
 sizes = country_size.melt(id_vars=["Country Code"],
@@ -36,10 +46,6 @@ sizes["Year"] = sizes["Year"].apply(lambda x: int(x))
 
 # %%
 sizes.head()
-
-# %%
-soy_trade.rename(columns={"1201 in 1000 USD ": "trade_value"}, inplace=True)
-soy_trade['ln_trade_value'] = soy_trade['trade_value'].apply(lambda x: np.log(x))
 
 # %%
 def add_attributes(trade_table, sizes_table, attribute_name):
@@ -131,8 +137,6 @@ fig.update_layout(title_text='Exports x Source Area', title_x=0.5)
 fig.show()
 
 # %%
-ex_rate = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Exchange%20Rates.csv?token=GHSAT0AAAAAACAIZJ3J2IXNVLAXPYSOMDTOZCWB2RQ', skiprows=2)
-ex_rate.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
 ex_rate.head()
 
 # %%
@@ -209,10 +213,6 @@ data['Target Consumer Price Index'] = [0 if i is None else float(str(i).replace(
 data["exchange_rate ijt"] = data["Ex Rate Target / Source"] * (data["Source Consumer Price Index"] / data["Target Consumer Price Index"])
 
 # %%
-gdp_data = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Gross%20Domestic%20Product.csv?token=GHSAT0AAAAAACAIZJ3J7OIU3VFDAPUG7342ZCWB4BQ',skiprows=2)
-
-gdp_data.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
-
 gdp_data = gdp_data.melt(id_vars=["Country Code"],
     var_name="Year",
     value_name="GDP")
