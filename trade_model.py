@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
 import seaborn as sns
+import plotly.express as px
 from matplotlib import colors
 from os import listdir
 from os.path import isfile, join
@@ -117,8 +118,6 @@ g = sns.jointplot(x="ln_trade_value", y="Target Area", data=data[ (data['Source'
 trade_brazil_2017 = data[ (data['Source'] == 'BRA') & (data['Year'] == 2017)]
 
 # %%
-import plotly.express as px
-
 fig = px.scatter(trade_brazil_2017, y="Target Area", x="trade_value", text="Target", log_x=True, size_max=100, color="trade_value", trendline="ols")
 fig.update_traces(textposition='top center')
 fig.update_layout(title_text='Country Partner Area', title_x=0.5)
