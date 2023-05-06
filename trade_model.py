@@ -8,13 +8,15 @@ from matplotlib import colors
 from os import listdir
 from os.path import isfile, join
 import numpy as np
+import streamlit as st
 
 # %%
 soy_trade = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/soytrade.csv')
 country_size = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/countries_size.csv')
 ex_rate = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Exchange%20Rates.csv', skiprows=2)
 gdp_data = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Gross%20Domestic%20Product.csv',skiprows=2)
-
+consumer_price = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Consumer%20Price%20Index.csv', skiprows=2)
+st.title('Soybeans Trade Analysis')
 
 soy_trade.rename(columns={"1201 in 1000 USD ": "trade_value"}, inplace=True)
 soy_trade['ln_trade_value'] = soy_trade['trade_value'].apply(lambda x: np.log(x))
@@ -30,13 +32,11 @@ gdp_data.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
 
 ex_rate.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
 
-
-# %%
-soy_trade.head()
-
-# %%
-country_size.head()
-
+consumer_price.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
+consumer_price = consumer_price.melt(id_vars=["Country Code"],
+    var_name="Year",
+    value_name="Consumer Price Index")
+consumer_price["Year"] = consumer_price["Year"].apply(lambda x: int(x))
 # %%
 sizes = country_size.melt(id_vars=["Country Code"],
                   var_name="Year",
@@ -45,10 +45,6 @@ sizes = country_size.melt(id_vars=["Country Code"],
 # %%
 sizes["Year"] = sizes["Year"].apply(lambda x: int(x))
 
-# %%
-sizes.head()
-
-# %%
 def add_attributes(trade_table, sizes_table, attribute_name):
     trade_table = trade_table.copy()
     sizes_table = sizes_table.copy()
@@ -78,210 +74,74 @@ def add_attributes(trade_table, sizes_table, attribute_name):
                 print(f"{progress}% done")
     return trade_table
 
-
-# %%
-def append_sizes_to_trade_table(sizes_table, trade_table, attribute_name):
-    count = 0
-    progress = 0
-   
-    for row in range(len(soy_trade)):
-        source_area_slice = sizes_table[(sizes["Country Code"] == trade_table.iloc[row, 0]) & (sizes["Year"] == trade_table.loc[row]["Year"])]
-        target_area_slice = sizes_table[(sizes["Country Code"] == trade_table.iloc[row, 1]) & (sizes["Year"] == trade_table.loc[row]["Year"])]
-        if len(source_area_slice) > 0:
-            trade_table.at[row, f"Source {attribute_name}"] = source_area_slice.iloc[0][attribute_name]
-        else: 
-            trade_table.at[row, f"Source {attribute_name}"] = None
-        if len(target_area_slice) > 0:
-            trade_table.at[row, f"Target {attribute_name}"] = target_area_slice.iloc[0][attribute_name]
-        else:
-            trade_table.at[row, f"Target {attribute_name}"] = None
-        count += 1
-        current_progress = count / len(soy_trade) * 100
-        if current_progress >= 1:
-            if current_progress >= progress + 10:
-                progress = int(current_progress // 10) * 10
-                print(f"{progress}% done")
-
-# %%
 data = add_attributes(soy_trade, sizes, "Area")
 
-# %%
-data.head()
+"""
+To start with the analysis, we can visualize the soybeans trade data the respective area of each country.
+"""
+st.write(data)
 
-# %%
 # relationship between trade value and area of brazilian partners   
-g = sns.jointplot(x="ln_trade_value", y="Target Area", data=data[ (data['Source'] == 'BRA') & (data['Year'] == 2017)],
+st.header("Relationship between 2017 trade value and area of brazilian partners")
+
+"""
+Here the trade data is presented by the log of the trade value and the area of the partner countries.
+"""
+#### create space for the replacement of the chart
+chart_placeholder = st.empty()
+chart_placeholder.pyplot()
+chart = sns.jointplot(x="ln_trade_value", y="Target Area", data=data[ (data['Source'] == 'BRA') & (data['Year'] == 2017)],
                   kind="reg", truncate=False,
                   color="m")
+chart_placeholder.pyplot(chart, use_container_width=True)
 
-# %%
+"""
+In order to inspect the 'outliers' of the previous chart, one can visualize the data in an interactive way.
+"""
 trade_brazil_2017 = data[ (data['Source'] == 'BRA') & (data['Year'] == 2017)]
-
-# %%
 fig = px.scatter(trade_brazil_2017, y="Target Area", x="trade_value", text="Target", log_x=True, size_max=100, color="trade_value", trendline="ols")
 fig.update_traces(textposition='top center')
 fig.update_layout(title_text='Country Partner Area', title_x=0.5)
-fig.show()
+# Plot!
+st.plotly_chart(fig, use_container_width=True)
 
-# %%
+
+"""
+Additionally we can investigate the relationship of the country's area and the trade volume of soybeans in 2020
+"""
+
 sum_trade = data[soy_trade['Year'] == 2020].groupby(['Source', 'Source Area'], as_index=False)['trade_value'].sum().sort_values(by=['trade_value'], ascending=False)
 
-# %%
-sum_trade.head()
+"""
+Here are the main exporters in 2020.
+"""
+st.table(sum_trade.head())
 
-# %%
+"""
+We can see the correlation between the trade value and the area of the country in the following chart.
+"""
 fig = px.scatter(sum_trade, y="Source Area", x="trade_value", text="Source", log_x=True, size_max=100, color="trade_value", trendline="ols")
 fig.update_traces(textposition='top center')
 fig.update_layout(title_text='Exports x Source Area', title_x=0.5)
-fig.show()
+# Plot!
+st.plotly_chart(fig, use_container_width=True)
 
-# %%
-ex_rate.head()
-
-# %%
-ex_rate = ex_rate.melt(id_vars=["Country Code"],
-                  var_name="Year",
-                  value_name="Exchange Rate")
-
-# %%
-ex_rate.head()
-
-# %%
-ex_rate["Year"] = ex_rate["Year"].apply(lambda x: int(x))
-
-# %%
-data = add_attributes(soy_trade, ex_rate, "Exchange Rate")
-
-# %%
-data.head()
-
-# %%
-print (data['Source Exchange Rate'].isnull().sum(), data['Target Exchange Rate'].isnull().sum())
-
-# %%
-# Subsitute nan of eu countries with EMU exchange rate
-## EMU = European Monetary Union (Euro)
-eu_countries = ['AUT', 'BEL', 'CYP', 'EST', 'FIN', 'FRA', 'DEU', 'GRC', 'IRL', 'ITA', 'LVA', 'LTU', 'LUX', 'MLT', 'NLD', 'PRT', 'SVK', 'SVN', 'ESP']
-
-for year in range(1999, data['Year'].max()+1):
-    for country in eu_countries:
-        ex_rate_value = ex_rate[(ex_rate["Year"] == year) & (ex_rate["Country Code"] == 'EMU')]['Exchange Rate'].values[0]
-        data.loc[(data["Year"] == year) & (data["Source"].isin(eu_countries)), 'Source Exchange Rate'] = ex_rate_value
-        data.loc[(data["Year"] == year) & (data["Target"].isin(eu_countries)), 'Target Exchange Rate'] = ex_rate_value
-
-# %%
-print (data['Source Exchange Rate'].isnull().sum(), data['Target Exchange Rate'].isnull().sum())
-
-# %%
-data['Source Exchange Rate'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Source Exchange Rate"]]
-data['Target Exchange Rate'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Target Exchange Rate"]]
-
-# %%
-data["Ex Rate Source / Target"] = data["Source Exchange Rate"] / data["Target Exchange Rate"]
-data["Ex Rate Target / Source"] = data["Target Exchange Rate"] / data["Source Exchange Rate"]
-
-# %%
-consumer_price = pd.read_csv('https://raw.githubusercontent.com/friedrich-henrique/datasets_soybeans_research/main/Consumer%20Price%20Index.csv?token=GHSAT0AAAAAACAIZJ3ILPT5RHHYRPV7PCQCZCWB3UA', skiprows=2)
-
-consumer_price.rename({'Unnamed: 0': 'Country Code'}, inplace=True, axis=1)
-
-# %%
-consumer_price.head()
-
-# %%
-consumer_price = consumer_price.melt(id_vars=["Country Code"],
-    var_name="Year",
-    value_name="Consumer Price Index")
-
-consumer_price.head()
-
-# %%
-consumer_price["Year"] = consumer_price["Year"].apply(lambda x: int(x))
-
-# %%
-data = add_attributes(data, consumer_price, "Consumer Price Index")
-
-# %%
-data.head()
-
-# %%
-data['Source Consumer Price Index'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Source Consumer Price Index"]]
-data['Target Consumer Price Index'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Target Consumer Price Index"]]
-
-# %%
-data["exchange_rate ijt"] = data["Ex Rate Target / Source"] * (data["Source Consumer Price Index"] / data["Target Consumer Price Index"])
-
-# %%
-gdp_data = gdp_data.melt(id_vars=["Country Code"],
-    var_name="Year",
-    value_name="GDP")
-gdp_data["Year"] = gdp_data["Year"].apply(lambda x: int(x))
-gdp_data.head()
-
-# %%
-data = add_attributes(data, gdp_data, "GDP")
-
-# %%
-data['Source GDP'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Source GDP"]]
-data['Target GDP'] = [0 if i is None else float(str(i).replace(",", "")) for i in data["Target GDP"]]
-
-# %%
-data.replace(0, np.nan, inplace=True)
-
-# %%
-data["level of output ijt"] = (np.log(data["Source GDP"]) + np.log(data["Target GDP"])) / 2
-
-# %%
-data.dropna().head()
-
-# %%
-fig = px.scatter(data.dropna(), y="trade_value", x="level of output ijt", color="trade_value", trendline="ols")
-fig.update_traces(textposition='top center')
-fig.update_layout(title_text='Trade x Output', title_x=0.5)
-fig.show()
-
-# %%
-fig = px.scatter(data.dropna(), y="trade_value", x="level of output ijt", log_y=True, size_max=100, color="trade_value", trendline="ols")
-fig.update_traces(textposition='top center')
-fig.update_layout(title_text='Trade x GDP', title_x=0.5)
-fig.show()
-
-# %%
+st.header("Countrys participation on trade")
+"""
+we can also investigate the role of each country on the trade of soybeans by looking on the figures of how much each of them negotiated over the years.
+"""
 trade = pd.DataFrame()
 trade["exports"] = data.groupby(["Source"]).sum().sort_values(by=['trade_value'], ascending=False)["trade_value"]
 trade["imports"] = data.groupby(["Target"]).sum().sort_values(by=['trade_value'], ascending=False)["trade_value"]
 
-# %%
-trade.sort_values(by=['exports'], ascending=False).head()
+"""
+The summary of the main exporters and importers is presented below.
+"""
+st.subheader("Main exporters")
+st.write(trade.sort_values(by=['exports'], ascending=False).head())
 
-# %%
+st.subheader("Main importers")
+st.write(trade.sort_values(by=['imports'], ascending=False).head())
+
 trade["ln_exports"] = np.log(trade["exports"])
 trade["ln_imports"] = np.log(trade["imports"])
-
-# %%
-trade.ln_exports.min(), trade.ln_exports.max()
-
-trade.ln_imports.min(), trade.ln_imports.max()
-
-# %%
-plt.figure(figsize=(12,8))
-sns.scatterplot(data=trade, x='ln_exports', y='ln_imports')
-plt.title(f"Soybeans trade: Sellers x Buyers")
-plt.xlabel("Ln Vol. Exports")
-plt.ylabel("Ln Vol. Imports")
-
-#Country names
-for i in range(trade.shape[0]):
-          plt.text(trade.ln_exports[i], y=trade.ln_imports[i], s=trade.iloc[i].name, mouseover=True, fontsize=10)
-
-# Benchmark Mean values          
-plt.axhline(y=trade.ln_exports.mean(), color='k', linestyle='--', linewidth=1)           
-plt.axvline(x=trade.ln_imports.mean(), color='k',linestyle='--', linewidth=1) 
-
-#Quadrant Marker          
-plt.text(x=trade.ln_exports.min()-1, y=trade.ln_imports.min(), s="Low imports, low exports",alpha=0.5,fontsize=10, color='black')
-plt.text(x=trade.ln_exports.min()-1, y=trade.ln_imports.max()+0.4, s="High imports, low exports",alpha=0.5,fontsize=10, color='black')
-plt.text(x=trade.ln_imports.mean()+0.1, y=trade.ln_imports.min(), s="Low imports, high exports", alpha=0.5,fontsize=10, color='black')
-plt.text(x=trade.ln_imports.mean()+0.1, y=trade.ln_imports.max()+0.4, s="High imports, high exports", alpha=0.5,fontsize=10, color='black')
-
-plt.show()
