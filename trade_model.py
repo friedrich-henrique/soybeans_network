@@ -145,3 +145,70 @@ st.write(trade.sort_values(by=['imports'], ascending=False).head())
 
 trade["ln_exports"] = np.log(trade["exports"])
 trade["ln_imports"] = np.log(trade["imports"])
+
+
+fig = px.scatter(trade, x='ln_exports', y='ln_imports', hover_name=trade.index)
+
+# calculate averages
+x_avg = trade['ln_exports'].mean()
+y_avg = trade['ln_imports'].mean()
+
+# add horizontal and vertical lines
+fig.add_vline(x=x_avg, line_width=1, opacity=0.5)
+fig.add_hline(y=y_avg, line_width=1, opacity=0.5)
+
+# set x limits
+adj_x = max((trade['ln_exports'].max() - x_avg), (x_avg - trade['ln_exports'].min())) * 1.1
+lb_x, ub_x = (x_avg - adj_x, x_avg + adj_x)
+fig.update_xaxes(range = [lb_x, ub_x])
+
+# set y limits
+adj_y = max((trade['ln_imports'].max() - y_avg), (y_avg - trade['ln_imports'].min())) * 1.1
+lb_y, ub_y = (y_avg - adj_y, y_avg + adj_y)
+fig.update_yaxes(range = [lb_y, ub_y])
+
+# update x tick labels
+axis = ['Low', 'High']     
+fig.update_layout(
+    xaxis_title='Ln Vol. Imports',
+    xaxis = dict(
+        tickmode = 'array',
+        tickvals = ([(x_avg - adj_x / 2), (x_avg + adj_x / 2)]),
+        ticktext = axis
+      )
+    )
+
+# update y tick labels
+fig.update_layout(
+    yaxis_title='Ln Vol. Exports',
+    yaxis = dict(
+        tickmode = 'array',
+        tickvals = ([(y_avg - adj_y / 2), (y_avg + adj_y / 2)]),
+        ticktext = axis,
+        tickangle=270
+        )
+    ) 
+
+fig.update_layout(margin=dict(t=50, l=5, r=5, b=50),
+title={'text': 'Soybeans trade: Sellers x Buyers',
+        'font_size': 20,
+        'y':0.95,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'})
+
+fig.add_annotation(x=trade.ln_exports.min()+1, y=trade.ln_imports.min(),
+                   text="Low imports, low exports",
+                   showarrow=False)
+fig.add_annotation(x=trade.ln_exports.min()+1, y=trade.ln_imports.max()+2,
+                   text="High imports, low exports",
+                   showarrow=False)
+fig.add_annotation(x=trade.ln_imports.mean(), y=trade.ln_imports.min(),
+                   text="Low imports, high exports",
+                   showarrow=False)
+fig.add_annotation(x=trade.ln_imports.mean(), y=trade.ln_imports.max()+2,
+                   text="High imports, high exports",
+                   showarrow=False)
+
+# Plot!
+st.plotly_chart(fig, use_container_width=True)
