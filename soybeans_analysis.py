@@ -258,4 +258,4 @@ def display_network(product = 'Beans'):
     fig
 
 display_analysis(option)
-display_network(option)
+#display_network(option)
