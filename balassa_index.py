@@ -8,6 +8,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import streamlit as st
+import plotly.graph_objects as go
 
 st.title(f'Balassa Index on Soybeans Trade')
 """
@@ -190,14 +191,49 @@ country = st.radio(
 # Filter the DataFrame for the selected country
 filtered_data = soy_country_exports[soy_country_exports['Country'] == country]
 
-# Create the line chart
-fig = px.line(filtered_data, x='Year', y='Balassa Index')
+# Create a Figure object
+fig = go.Figure()
 
-# Customize the chart as needed
+# Add the bar chart trace
+fig.add_trace(go.Bar(
+    x=filtered_data['Year'],
+    y=filtered_data['Trade Value'],
+    name='Trade Value',
+    marker_color='lightskyblue'
+))
+
+# Add the line chart trace
+fig.add_trace(go.Scatter(
+    x=filtered_data['Year'],
+    y=filtered_data['Balassa Index'],
+    mode='lines',
+    name='Balassa Index',
+    yaxis='y2'  # Assign the trace to the secondary y-axis
+))
+
+# Customize the layout
 fig.update_layout(
-    title=f"Balassa Index for {country}",
+    title=f"Trade Value and Balassa Index for {country}",
     xaxis_title="Year",
-    yaxis_title="Balassa Index"
+    yaxis=dict(
+        title="Trade Value",
+        showgrid=False
+    ),
+    yaxis2=dict(
+        title="Balassa Index",
+        overlaying="y",
+        side="right",
+        showgrid=False
+    ),
+    legend=dict(
+        x=0,
+        y=1,
+        traceorder='normal',
+        font=dict(
+            size=10
+        )
+    ),
+    barmode='group'
 )
 
 # Show the chart
