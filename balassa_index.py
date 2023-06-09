@@ -187,8 +187,6 @@ country = st.radio(
         key=f"country",
         horizontal=True)
 
-st.subheader(f"You selected {country}")
-
 # Filter the DataFrame for the selected country
 filtered_data = soy_country_exports[soy_country_exports['Country'] == country]
 
