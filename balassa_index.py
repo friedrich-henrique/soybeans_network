@@ -178,22 +178,11 @@ fig.update_layout(
 fig.update_xaxes(range=[soy_country_exports['Year'].min(), soy_country_exports['Year'].max() + 2])  # Assumes the data is sorted by year
 st.plotly_chart(fig)
 
-plt.figure(figsize=(10, 6))
 
-grouped_df = soy_country_exports.loc[soy_country_exports['Country'].isin(top), :].groupby('Country')
+country = st.radio(
+        "Which country do you want to inspect?",
+        soy_country_exports["Country"].unique(),
+        key=f"country",
+        horizontal=True)
 
-for country, data in grouped_df:
-    plt.plot(data['Year'], data['Balassa Index'], label=country)
-
-# Add labels and title
-plt.xlabel('Year')
-plt.ylabel('Balassa Index')
-plt.title(f'Top {number} Balassa Index for Soybeans')
-
-plt.xlim(soy_country_exports['Year'].min() + 1, soy_country_exports['Year'].max() + 1)
-
-# Add legend
-plt.legend()
-
-# Show the chart
-plt.show()
+st.subheader(f"You selected {country}")
