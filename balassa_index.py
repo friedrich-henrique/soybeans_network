@@ -178,7 +178,9 @@ fig.update_layout(
 fig.update_xaxes(range=[soy_country_exports['Year'].min(), soy_country_exports['Year'].max() + 2])  # Assumes the data is sorted by year
 st.plotly_chart(fig)
 
-
+"""
+Here is presented the top 20 countries with the highest Balassa Index.
+"""
 country = st.radio(
         "Which country do you want to inspect?",
         soy_country_exports.groupby('Country').mean().sort_values(by='Balassa Index', ascending=False).head(20).index.values,
@@ -186,3 +188,19 @@ country = st.radio(
         horizontal=True)
 
 st.subheader(f"You selected {country}")
+
+# Filter the DataFrame for the selected country
+filtered_data = soy_country_exports[soy_country_exports['Country'] == country]
+
+# Create the line chart
+fig = px.line(filtered_data, x='Year', y='Balassa Index')
+
+# Customize the chart as needed
+fig.update_layout(
+    title=f"Balassa Index for {country}",
+    xaxis_title="Year",
+    yaxis_title="Balassa Index"
+)
+
+# Show the chart
+st.plotly_chart(fig)
