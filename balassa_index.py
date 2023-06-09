@@ -199,7 +199,6 @@ fig.add_trace(go.Bar(
     x=filtered_data['Year'],
     y=filtered_data['Trade Value'],
     name='Trade Value',
-    marker_color='lightskyblue'
 ))
 
 # Add the line chart trace
