@@ -160,8 +160,18 @@ def get_top_balassa_index(df, top=10):
 
 
 number = 5
-
 top = get_top_balassa_index(soy_country_exports, top=number)
+
+fig = px.line(soy_country_exports.loc[soy_country_exports['Country'].isin(top), :], x='Year', y='Balassa Index', color='Country', symbol="Country")
+
+# Adjust the figure layout
+fig.update_layout(
+    width=800,  # Adjust the width as desired
+    height=600,  # Adjust the height as desired
+)
+
+fig.update_xaxes(range=[soy_country_exports['Year'].min(), soy_country_exports['Year'].max() + 2])  # Assumes the data is sorted by year
+st.plotly_chart(fig)
 
 plt.figure(figsize=(10, 6))
 
@@ -182,14 +192,3 @@ plt.legend()
 
 # Show the chart
 plt.show()
-
-fig = px.line(soy_country_exports.loc[soy_country_exports['Country'].isin(top), :], x='Year', y='Balassa Index', color='Country', symbol="Country")
-
-# Adjust the figure layout
-fig.update_layout(
-    width=800,  # Adjust the width as desired
-    height=600,  # Adjust the height as desired
-)
-
-fig.update_xaxes(range=[soy_country_exports['Year'].min(), soy_country_exports['Year'].max() + 2])  # Assumes the data is sorted by year
-fig.show()
