@@ -181,7 +181,7 @@ st.plotly_chart(fig)
 
 country = st.radio(
         "Which country do you want to inspect?",
-        soy_country_exports["Country"].unique(),
+        soy_country_exports.groupby('Country').mean().sort_values(by='Balassa Index', ascending=False).head(20).index.values,
         key=f"country",
         horizontal=True)
 
