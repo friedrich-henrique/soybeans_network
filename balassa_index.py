@@ -9,6 +9,7 @@ from os.path import isfile, join
 import numpy as np
 import streamlit as st
 
+st.title(f'Balassa Index on Soybeans Trade')
 """
 The current analysis seeks to identify the most important products in the world trade network by considering the Balassa Index.
 
