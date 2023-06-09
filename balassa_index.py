@@ -58,3 +58,18 @@ st.subheader("World exports data")
 st.write(world_exports.head())
 st.subheader("Soy world trade data")
 st.write(soy_exports.head())
+
+"""
+As we can see the soy data exports data is stratified by each partner, however we need to aggregate this data by country. A simple way to do this is by using the groupby function.
+"""
+
+code = '''
+soy_country_exports = soy_data.groupby(['Source', 'Year'], as_index=False).sum().loc[:, ['Source', 'Year', 'trade_value']]
+'''
+st.code(code, language='python')
+soy_country_exports = soy_data.groupby(['Source', 'Year'], as_index=False).sum().loc[:, ['Source', 'Year', 'trade_value']]
+
+"""
+A quick visualization on the new dataset shows that we have the total exports of soybeans by country and year. 
+"""
+st.write(soy_country_exports.head())
