@@ -73,3 +73,123 @@ soy_country_exports = soy_data.groupby(['Source', 'Year'], as_index=False).sum()
 A quick visualization on the new dataset shows that we have the total exports of soybeans by country and year. 
 """
 st.write(soy_country_exports.head())
+
+"""
+Usually I start calculating the easiest part of the problems I have, which in this case I think is the denominator, since we just have to calculate the total exports of soybeans relative to total export by year.
+The code bellow merges the two datasets into a new one called denominator, and calculates the total exports of soybeans relative to total export by year. 
+The collumm 'Share' is the one we are interested in, since it represents the percentage of soybeans in the total exports and will later on be used to calculate the Balassa Index.
+"""
+
+denominator = world_exports.merge(soy_exports, on='Year').loc[:, ['Year', 'TradeValue in 1000 USD_x', 'TradeValue in 1000 USD_y']]
+denominator.columns = ['Year', 'World Exports', 'Soy Exports']
+denominator['Share'] = denominator['Soy Exports'] / denominator['World Exports']
+
+code = ''' 
+# merge the two datasets and select only the columns we need
+denominator = world_exports.merge(soy_exports, on='Year').loc[:, ['Year', 'TradeValue in 1000 USD_x', 'TradeValue in 1000 USD_y']]
+# rename the columns
+denominator.columns = ['Year', 'World Exports', 'Soy Exports']
+# calculate the percentage
+denominator['Share'] = denominator['Soy Exports'] / denominator['World Exports']
+'''
+st.code(code, language='python')
+
+"""
+Half the work is done, now it is time to get the numerator of the Balassa Index. So we have to get the total exports of soybeans by country and year, and then divide it by the total exports of the country by year.
+
+As we could see with a quick observation in the soy exports by country, there are years with no data, and also not all countries have soybeans exports. 
+Hence one simple solution is to add the country exports data into the soy country exports dataframe, since we do not need to keep track of what data is missing.
+A simple for loop will do the job, however admittedly it is not the most efficient way to do it.
+Additionally, to make the analysis easier, I will rename the columns of the soy country exports dataframe.
+With the new column 'Country Export' we can calculate the numerator of the Balassa Index, by dividing the 'Trade Value' by the 'Country Export'.
+"""
+
+for row in range(len(soy_country_exports)):
+    soy_country_exports.loc[row, 'Country Export'] = country_exports.loc[(country_exports['ReporterISO3'] == soy_country_exports.loc[row]['Source']) & (country_exports['Year'] == soy_country_exports.loc[row]['Year']), 'TradeValue in 1000 USD'].values[0]
+
+code = ''' 
+for row in range(len(soy_country_exports)):
+    soy_country_exports.loc[row, 'Country Export'] = country_exports.loc[(country_exports['ReporterISO3'] == soy_country_exports.loc[row]['Source']) & (country_exports['Year'] == soy_country_exports.loc[row]['Year']), 'TradeValue in 1000 USD'].values[0]
+
+soy_country_exports.columns = ['Country', 'Year', 'Trade Value', 'Country Export']
+
+soy_country_exports['Share'] = soy_country_exports['Trade Value'] / soy_country_exports['Country Export']
+'''
+st.code(code, language='python')
+
+soy_country_exports.columns = ['Country', 'Year', 'Trade Value', 'Country Export']
+
+soy_country_exports['Share'] = soy_country_exports['Trade Value'] / soy_country_exports['Country Export']
+
+"""
+We can visualize the new dataframe bellow.
+"""
+
+st.write(soy_country_exports.head())
+
+"""
+Now that we have the numerator and the denominator, we can calculate the index. 
+I merge the two dataframes based on the 'Year' column, and rename the columns to make it easier to understand. 
+Consequently we will have the Ballassa index, since it is just the quotient of these two values.
+"""
+
+code = '''
+# Merge the two DataFrames based on the "Year" column
+soy_country_exports = soy_country_exports.merge(denominator[['Year', 'Share']], on='Year', how='left')
+
+# Rename the "Share" column from the denominator DataFrame
+soy_country_exports.rename(columns={'Share_y': 'Denominator', 'Share_x': 'Numerator'}, inplace=True)
+soy_country_exports['Balassa Index'] = soy_country_exports['Numerator'] / soy_country_exports['Denominator']
+'''
+
+soy_country_exports = soy_country_exports.merge(denominator[['Year', 'Share']], on='Year', how='left')
+soy_country_exports.rename(columns={'Share_y': 'Denominator', 'Share_x': 'Numerator'}, inplace=True)
+soy_country_exports['Balassa Index'] = soy_country_exports['Numerator'] / soy_country_exports['Denominator']
+
+"""
+We can the final dataframe bellow.
+"""
+st.write(soy_country_exports)
+
+
+"""
+A last step is to visualize the top 5 countries with the highest Balassa Index. And observe the trend they have over the years.
+"""
+def get_top_balassa_index(df, top=10):
+    return df.groupby('Country').mean().sort_values(by='Balassa Index', ascending=False).head(top).index.values
+
+
+number = 5
+
+top = get_top_balassa_index(soy_country_exports, top=number)
+
+plt.figure(figsize=(10, 6))
+
+grouped_df = soy_country_exports.loc[soy_country_exports['Country'].isin(top), :].groupby('Country')
+
+for country, data in grouped_df:
+    plt.plot(data['Year'], data['Balassa Index'], label=country)
+
+# Add labels and title
+plt.xlabel('Year')
+plt.ylabel('Balassa Index')
+plt.title(f'Top {number} Balassa Index for Soybeans')
+
+plt.xlim(soy_country_exports['Year'].min() + 1, soy_country_exports['Year'].max() + 1)
+
+# Add legend
+plt.legend()
+
+# Show the chart
+plt.show()
+
+fig = px.line(soy_country_exports.loc[soy_country_exports['Country'].isin(top), :], x='Year', y='Balassa Index', color='Country', symbol="Country")
+
+# Adjust the figure layout
+fig.update_layout(
+    width=800,  # Adjust the width as desired
+    height=600,  # Adjust the height as desired
+)
+
+fig.update_xaxes(range=[soy_country_exports['Year'].min(), soy_country_exports['Year'].max() + 2])  # Assumes the data is sorted by year
+fig.show()
