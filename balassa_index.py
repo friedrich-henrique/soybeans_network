@@ -14,9 +14,13 @@ st.title(f'Balassa Index on Soybeans Trade')
 The current analysis seeks to identify the most important products in the world trade network by considering the Balassa Index.
 
 This index was firstly introduced by Bela Balassa in 1965 and it is used to measure the comparative advantage of a country in a certain product. The index is calculated as follows:
+"""
 
+st.latex(r'''
 Balassa Index = (Xij / Xi) / (Xwj / Xw)
+''')
 
+"""
 Where Xij is the exports of product j from country i, Xi is the total exports of country i, Xwj is the exports of product j from the world, and Xw is the total exports of the world.
 
 It is ussualy said that a value greater than 1 indicates that the country has a comparative advantage in that product, while a value less than 1 indicates that the country has a comparative disadvantage in that product.
